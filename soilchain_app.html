@@ -185,6 +185,7 @@
     <button class="nav-tab" onclick="showPage('dashboard')">My Farm</button>
   </div>
   <div class="nav-right">
+    <button onclick="resetDemo()" style="font-family:'Syne',sans-serif;font-size:11px;font-weight:600;padding:6px 12px;border-radius:100px;border:1px solid rgba(196,168,130,0.4);background:transparent;color:var(--clay);cursor:pointer" title="Reset all demo data for a fresh presentation">↺ Reset</button>
     <div class="nav-token-badge">🪙 <span id="navTokens">0</span> SOIL</div>
     <div class="nav-wallet"><div class="wdot"></div>0x5084...42bA</div>
   </div>
@@ -266,18 +267,14 @@
         </div>
         <div class="sensor-sep">IoT Sensor Readings</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">pH Level</label><input class="form-input" id="ph" value="6.5" type="number" step="0.1"></div>
-          <div class="form-group"><label class="form-label">Nitrogen mg/kg</label><input class="form-input" id="nitrogen" value="320" type="number"></div>
+          <div class="form-group"><label class="form-label">pH Level <span style="color:var(--clay);font-size:11px">(0–14)</span></label><input class="form-input" id="ph" value="6.5" type="number" step="0.1" min="0" max="14"></div>
+          <div class="form-group"><label class="form-label">Nitrogen mg/kg <span style="color:var(--clay);font-size:11px">(0–1000)</span></label><input class="form-input" id="nitrogen" value="320" type="number" min="0" max="1000"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Phosphorus mg/kg</label><input class="form-input" id="phosphorus" value="38" type="number"></div>
-          <div class="form-group"><label class="form-label">Potassium mg/kg</label><input class="form-input" id="potassium" value="185" type="number"></div>
+          <div class="form-group"><label class="form-label">Phosphorus mg/kg <span style="color:var(--clay);font-size:11px">(0–200)</span></label><input class="form-input" id="phosphorus" value="38" type="number" min="0" max="200"></div>
+          <div class="form-group"><label class="form-label">Potassium mg/kg <span style="color:var(--clay);font-size:11px">(0–500)</span></label><input class="form-input" id="potassium" value="185" type="number" min="0" max="500"></div>
         </div>
-        <div class="form-group"><label class="form-label">Moisture %</label><input class="form-input" id="moisture" value="48" type="number"></div>
-        <div class="form-group">
-          <label class="form-label">📷 Soil Photo <span style="font-weight:400;color:var(--clay)">(optional — enhances AI accuracy)</span></label>
-          <input class="form-input" id="soilImage" type="file" accept="image/*" style="padding:8px 13px;cursor:pointer">
-        </div>
+        <div class="form-group"><label class="form-label">Moisture % <span style="color:var(--clay);font-size:11px">(0–100)</span></label><input class="form-input" id="moisture" value="48" type="number" min="0" max="100"></div>
         <button class="scan-btn" id="scanBtn" onclick="runSoilScan()"><span>🔬</span> Analyse Soil</button>
       </div>
       <div class="card" style="display:flex;flex-direction:column">
@@ -379,9 +376,88 @@ const S = {
 
 const API = 'http://127.0.0.1:8000/api';
 
+// ── LOCALSTORAGE PERSISTENCE ───────────────────────────
+const STORAGE_KEY = 'soilchain_v2';
+
+function saveState() {
+  try {
+    // Save only serializable data (not functions)
+    const toSave = {
+      tokenBalance: S.tokenBalance,
+      totalCO2: S.totalCO2,
+      totalRentals: S.totalRentals,
+      scanHistory: S.scanHistory,
+      activityFeed: S.activityFeed,
+      myListingId: S.myListingId,
+      myCreditOfferId: S.myCreditOfferId,
+      // Save only user-added entries (owner==='me')
+      myListings: S.listings.filter(l => l.owner === 'me'),
+      myCreditOffers: S.creditOffers.filter(o => o.owner === 'me'),
+      // Track which demo items are sold/rented
+      soldCredits: S.creditOffers.filter(o => o.owner !== 'me' && o.sold).map(o => o.id),
+      rentedListings: S.listings.filter(l => l.owner !== 'me').map(l => ({ id: l.id, qty: l.qty })),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch(e) { console.warn('Could not save state', e); }
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const d = JSON.parse(saved);
+    S.tokenBalance   = d.tokenBalance   || 0;
+    S.totalCO2       = d.totalCO2       || 0;
+    S.totalRentals   = d.totalRentals   || 0;
+    S.scanHistory    = d.scanHistory    || [];
+    S.activityFeed   = d.activityFeed   || [];
+    S.myListingId    = d.myListingId    || null;
+    S.myCreditOfferId= d.myCreditOfferId|| null;
+    // Restore user's own listings at top
+    if (d.myListings && d.myListings.length) {
+      S.listings = [...d.myListings, ...S.listings];
+    }
+    if (d.myCreditOffers && d.myCreditOffers.length) {
+      S.creditOffers = [...d.myCreditOffers, ...S.creditOffers];
+    }
+    // Restore sold status on demo items
+    if (d.soldCredits) {
+      d.soldCredits.forEach(id => {
+        const o = S.creditOffers.find(x => x.id === id);
+        if (o) o.sold = true;
+      });
+    }
+    // Restore quantity changes on demo listings
+    if (d.rentedListings) {
+      d.rentedListings.forEach(({ id, qty }) => {
+        const l = S.listings.find(x => x.id === id);
+        if (l) l.qty = qty;
+      });
+    }
+  } catch(e) { console.warn('Could not load state', e); }
+}
+
+// ── TIERED TOKEN REWARD ────────────────────────────────
+function getTieredReward(score, carbonTons) {
+  let multiplier = 1;
+  if (score >= 95)      multiplier = 3.0;
+  else if (score >= 90) multiplier = 2.0;
+  else if (score >= 85) multiplier = 1.5;
+  else if (score >= 80) multiplier = 1.0;
+  return parseFloat((carbonTons * multiplier).toFixed(2));
+}
+
+function getTierLabel(score) {
+  if (score >= 95) return { label: 'Grade A+', mult: '3x', color: '#1A5E20' };
+  if (score >= 90) return { label: 'Grade A',  mult: '2x', color: '#2D6A4F' };
+  if (score >= 85) return { label: 'Grade A-', mult: '1.5x', color: '#52B788' };
+  return                  { label: 'Grade B+', mult: '1x', color: '#F0A500' };
+}
+
 // ── NAV BADGE UPDATE ───────────────────────────────────
 function updateNavBadge() {
   document.getElementById('navTokens').textContent = S.tokenBalance.toFixed(1);
+  saveState();
 }
 
 // ── NAVIGATION ─────────────────────────────────────────
@@ -419,7 +495,12 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 function addActivity(icon, text) {
   S.activityFeed.unshift({ icon, text, time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) });
   if (S.activityFeed.length > 8) S.activityFeed.pop();
+  saveState();
 }
+
+// ── STARTUP — load persisted state ─────────────────────
+loadState();
+updateNavBadge();
 
 // ── RENDER DASHBOARD ───────────────────────────────────
 function renderDashboard() {
@@ -461,51 +542,49 @@ function renderDashboard() {
 // SOIL SCAN
 // ══════════════════════════════════════════════════════
 async function runSoilScan() {
+  // ── Input validation ──────────────────────────────────
+  const ph  = parseFloat(document.getElementById('ph').value);
+  const n   = parseFloat(document.getElementById('nitrogen').value);
+  const p   = parseFloat(document.getElementById('phosphorus').value);
+  const k   = parseFloat(document.getElementById('potassium').value);
+  const m   = parseFloat(document.getElementById('moisture').value);
+  const loc = document.getElementById('farmLocation').value.trim();
+  const fid = document.getElementById('farmerId').value.trim();
+
+  if (!fid)               { showToast('⚠️ Farmer ID is required',''); return; }
+  if (!loc)               { showToast('⚠️ Farm Location is required',''); return; }
+  if (isNaN(ph)||ph<0||ph>14)       { showToast('⚠️ pH must be between 0 and 14',''); return; }
+  if (isNaN(n)||n<0||n>1000)        { showToast('⚠️ Nitrogen must be between 0 and 1000 mg/kg',''); return; }
+  if (isNaN(p)||p<0||p>200)         { showToast('⚠️ Phosphorus must be between 0 and 200 mg/kg',''); return; }
+  if (isNaN(k)||k<0||k>500)         { showToast('⚠️ Potassium must be between 0 and 500 mg/kg',''); return; }
+  if (isNaN(m)||m<0||m>100)         { showToast('⚠️ Moisture must be between 0 and 100%',''); return; }
+
   const btn = document.getElementById('scanBtn');
   btn.disabled=true;
   btn.innerHTML='<div class="spinner" style="border-color:rgba(255,255,255,.3);border-top-color:white"></div> Analysing...';
-
-  const farmer_id     = document.getElementById('farmerId').value;
-  const farm_location = document.getElementById('farmLocation').value;
-  const latitude      = parseFloat(document.getElementById('latitude').value);
-  const longitude     = parseFloat(document.getElementById('longitude').value);
-  const ph            = parseFloat(document.getElementById('ph').value);
-  const nitrogen      = parseFloat(document.getElementById('nitrogen').value);
-  const phosphorus    = parseFloat(document.getElementById('phosphorus').value);
-  const potassium     = parseFloat(document.getElementById('potassium').value);
-  const moisture      = parseFloat(document.getElementById('moisture').value);
-  const imageFile     = document.getElementById('soilImage').files[0];
-
+  const payload={
+    farmer_id: fid,
+    farm_location: loc,
+    latitude:parseFloat(document.getElementById('latitude').value),
+    longitude:parseFloat(document.getElementById('longitude').value),
+    ph, nitrogen:n, phosphorus:p, potassium:k, moisture:m,
+  };
   let data;
   try {
-    let res;
-    if (imageFile) {
-      // Use multipart/form-data endpoint with CNN image analysis
-      const fd = new FormData();
-      fd.append('farmer_id',     farmer_id);
-      fd.append('farm_location', farm_location);
-      fd.append('latitude',      latitude);
-      fd.append('longitude',     longitude);
-      fd.append('ph',            ph);
-      fd.append('nitrogen',      nitrogen);
-      fd.append('phosphorus',    phosphorus);
-      fd.append('potassium',     potassium);
-      fd.append('moisture',      moisture);
-      fd.append('image',         imageFile);
-      res = await fetch(`${API}/soil/scan-with-image`, { method: 'POST', body: fd });
-    } else {
-      // JSON endpoint — sensor-only scoring
-      const payload = { farmer_id, farm_location, latitude, longitude, ph, nitrogen, phosphorus, potassium, moisture };
-      res = await fetch(`${API}/soil/scan`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const res=await fetch(`${API}/soil/scan`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload), signal: controller.signal});
+    clearTimeout(timeout);
+    if(!res.ok) throw new Error();
+    data=await res.json();
+    // Apply tiered reward on top of backend result
+    if (data.eligible_for_token) {
+      data.estimated_token_reward = getTieredReward(data.soil_health.score, data.soil_health.carbon_sequestration_tons);
     }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    data = await res.json();
-    showToast(imageFile ? '🤖 Live CNN + sensor analysis complete!' : '✅ Live sensor analysis complete!', 'success');
-  } catch(err) {
-    console.warn('API unavailable, using demo mode:', err.message);
-    const payload = { farmer_id, farm_location, latitude, longitude, ph, nitrogen, phosphorus, potassium, moisture };
-    data = simulateScan(payload);
-    showToast('📡 Demo mode — backend offline, showing simulated result', '');
+    showToast('✅ Live AI analysis complete!','success');
+  } catch {
+    data=simulateScan(payload);
+    showToast('📡 Demo mode — simulated result','');
   }
   S.lastScanData = data;
   S.scanHistory.unshift({score:data.soil_health.score,grade:data.soil_health.grade,location:data.farm_location,date:new Date().toLocaleDateString('en-IN'),tokens:data.estimated_token_reward,scanId:data.scan_id,eligible:data.eligible_for_token});
@@ -526,11 +605,13 @@ function simulateScan(p) {
   const grade=score>=80?'A':score>=65?'B':score>=50?'C':'D';
   const carbon=parseFloat((score/100*4).toFixed(2));
   const eligible=score>=80;
+  // Apply tiered reward
+  const reward = eligible ? getTieredReward(score, carbon) : 0;
   return {
     scan_id:'scan_'+Math.random().toString(36).substr(2,8),
     farmer_id:p.farmer_id,farm_location:p.farm_location,
     soil_health:{score,grade,ph_status:ph>=6&&ph<=7.5?'Optimal':'Needs adjustment',nutrient_status:grade==='A'?'Excellent — all nutrients balanced':'Needs improvement',microbiome_diversity:parseFloat((score/100*8.5).toFixed(2)),carbon_sequestration_tons:carbon,recommendations:score>=80?['Maintain current practices','Consider cover cropping between seasons']:['Increase organic matter input','Apply compost at 5 tons/acre','Avoid tilling']},
-    eligible_for_token:eligible,estimated_token_reward:eligible?parseFloat((carbon*2).toFixed(2)):0,nft_metadata_uri:eligible?`ipfs://QmSoilChain/${Math.random().toString(36).substr(2,16)}`:null
+    eligible_for_token:eligible,estimated_token_reward:reward,nft_metadata_uri:eligible?`ipfs://QmSoilChain/${Math.random().toString(36).substr(2,16)}`:null
   };
 }
 
@@ -540,21 +621,7 @@ function displayResult(data) {
   document.getElementById('resultPlaceholder').style.display='none';
   const c=document.getElementById('resultContent');
   c.style.display='flex';
-
-  // Detect AI label from the first recommendation if it came from CNN
-  const aiRec = h.recommendations.find(r => r.startsWith('📷 AI visual analysis'));
-  const aiHtml = aiRec
-    ? `<div style="background:var(--mist);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:9px;font-size:12px;">
-        <span style="font-size:18px">🤖</span>
-        <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--moss)">${aiRec}</span>
-       </div>`
-    : '';
-
-  // Filter out the AI rec from the recommendations list (shown separately above)
-  const recs = h.recommendations.filter(r => !r.startsWith('📷 AI visual analysis'));
-
   c.innerHTML=`
-    ${aiHtml}
     <div class="result-score-big">
       <div class="rscore" style="color:${gc[h.grade]}">${h.score}</div>
       <div class="rgrade">Grade ${h.grade} — ${h.ph_status}</div>
@@ -565,11 +632,18 @@ function displayResult(data) {
       <div class="mbox"><div class="lbl">Microbiome</div><div class="val">${h.microbiome_diversity}/8.5</div></div>
       <div class="mbox"><div class="lbl">Scan ID</div><div class="val" style="font-size:10px;font-family:'DM Mono',monospace">${data.scan_id.substr(0,12)}...</div></div>
     </div>
-    <div class="recs"><h4>💡 Recommendations</h4>${recs.map(r=>`<div class="rec-item">${r}</div>`).join('')}</div>
+    <div class="recs"><h4>💡 Recommendations</h4>${h.recommendations.map(r=>`<div class="rec-item">${r}</div>`).join('')}</div>
     ${data.eligible_for_token?`
     <div class="token-reward">
       <div class="token-icon">🪙</div>
-      <div class="token-info"><h4>Earn ${data.estimated_token_reward} SOIL Tokens!</h4><p>Score qualifies — mint on Polygon Amoy</p></div>
+      <div class="token-info">
+        <h4>Earn ${data.estimated_token_reward} SOIL Tokens!</h4>
+        <p>Score qualifies — mint on Polygon Amoy &nbsp;
+          <span style="background:${getTierLabel(data.soil_health.score).color};color:white;padding:2px 8px;border-radius:20px;font-size:11px;font-family:'Syne',sans-serif">
+            ${getTierLabel(data.soil_health.score).label} · ${getTierLabel(data.soil_health.score).mult} reward
+          </span>
+        </p>
+      </div>
       <button class="btn btn-gold btn-sm" onclick="mintTokens('${data.scan_id}',${data.estimated_token_reward},'${data.farm_location}',${data.soil_health.score})">Mint Now</button>
     </div>`:`
     <div style="background:#FDF2F8;border:1.5px solid #F1948A;border-radius:10px;padding:13px;font-size:12px;color:#922B21;text-align:center">
@@ -656,6 +730,7 @@ function rentMicrobiome(id, farm, price, qty) {
       S.totalRentals++;
       addActivity('🌱',`Rented microbiome from ${farm} — ₹${(price*3).toLocaleString()} for 3 months`);
       showToast('✅ Rental confirmed! Smart contract locked.','success');
+      saveState();
       renderMarketplace();
       renderDashboard();
     }
@@ -677,6 +752,7 @@ function delistMicrobiome(id) {
   S.myListingId = null;
   addActivity('📤','Microbiome listing removed from marketplace');
   showToast('Listing removed.','');
+  saveState();
   renderMarketplace();
 }
 
@@ -718,6 +794,7 @@ function buyCredits(id, farm, tokens, total) {
       if (offer) offer.sold = true;
       addActivity('🏭',`Corporate bought ${tokens} SOIL tokens from ${farm} for ₹${total.toLocaleString()}`);
       showToast('🎉 Credits purchased! NFT certificate issued on Polygon.','success');
+      saveState();
       renderCredits();
       renderDashboard();
     }
@@ -741,8 +818,16 @@ function removeCreditOffer(id) {
   addActivity('📤','Carbon credit offer removed — tokens returned to wallet');
   updateNavBadge();
   showToast('Offer removed. Tokens returned to your wallet.','');
+  saveState();
   renderCredits();
   renderDashboard();
+}
+
+// ── RESET STATE (for fresh demo) ───────────────────────
+function resetDemo() {
+  if (!confirm('Reset all demo data? This clears scan history, tokens and marketplace activity.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
 }
 </script>
 </body>
