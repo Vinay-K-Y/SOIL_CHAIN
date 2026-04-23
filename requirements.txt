@@ -1,0 +1,22 @@
+# SoilChain — Complete Requirements
+# Install with: pip install -r requirements.txt
+ 
+# ── Web Framework ──────────────────────────────────────
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+ 
+# ── AI / ML ────────────────────────────────────────────
+tensorflow
+numpy
+opencv-python
+Pillow
+matplotlib
+scikit-learn
+seaborn
+ 
+# ── Utilities ──────────────────────────────────────────
+python-dotenv
+kaggle
+ 

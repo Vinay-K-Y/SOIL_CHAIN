@@ -1,0 +1,188 @@
+╔══════════════════════════════════════════════════════════════╗
+║           SOILCHAIN — COMPLETE SETUP & RUN GUIDE            ║
+╚══════════════════════════════════════════════════════════════╝
+
+Your project folder: C:\Users\Asus\Desktop\SOIL_CHAIN
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — FIX FOLDER STRUCTURE (ONE TIME ONLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your code imports from these internal paths:
+  app.models.schemas       → needs app\models\schemas.py
+  app.routers              → needs app\routers\soil.py etc
+  app.services.soil_analysis → needs app\services\soil_analysis.py
+
+STEP 1 — Open PowerShell and go to project:
+  cd C:\Users\Asus\Desktop\SOIL_CHAIN
+
+STEP 2 — Create missing folders:
+  mkdir app\models
+  mkdir app\routers
+  mkdir app\services
+
+STEP 3 — Create __init__.py in every folder:
+  echo. > app\__init__.py
+  echo. > app\models\__init__.py
+  echo. > app\routers\__init__.py
+  echo. > app\services\__init__.py
+
+STEP 4 — Copy your files into the right folders:
+  copy schemas.py     app\models\schemas.py
+  copy soil.py        app\routers\soil.py
+  copy tokens.py      app\routers\tokens.py
+  copy marketplace.py app\routers\marketplace.py
+  copy soil_analysis.py app\services\soil_analysis.py
+
+STEP 5 — Copy model files into app\models folder:
+  mkdir app\models\ml
+  copy best_model_phase2.h5  app\models\best_model_phase2.h5
+  copy class_indices.json    app\models\class_indices.json
+
+  NOTE: The code looks for models at:
+    C:\Users\Asus\Desktop\SOIL_CHAIN\models\best_model_phase2.h5
+  So also create a top-level models folder:
+  mkdir models
+  copy best_model_phase2.h5 models\best_model_phase2.h5
+  copy class_indices.json   models\class_indices.json
+
+STEP 6 — Your final folder structure should look like this:
+  SOIL_CHAIN\
+  ├── app\
+  │   ├── __init__.py
+  │   ├── main.py
+  │   ├── models\
+  │   │   ├── __init__.py
+  │   │   └── schemas.py
+  │   ├── routers\
+  │   │   ├── __init__.py
+  │   │   ├── soil.py
+  │   │   ├── tokens.py
+  │   │   └── marketplace.py
+  │   └── services\
+  │       ├── __init__.py
+  │       └── soil_analysis.py
+  ├── models\                     ← top-level, where AI looks for .h5
+  │   ├── best_model_phase2.h5
+  │   └── class_indices.json
+  ├── venv\
+  ├── soilchain_app.html
+  └── requirements.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — INSTALL ALL DEPENDENCIES (ONE TIME ONLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 7 — Delete old broken venv:
+  rmdir /s /q venv
+
+STEP 8 — Create fresh venv:
+  python -m venv venv
+
+STEP 9 — Activate venv:
+  venv\Scripts\activate
+  (You should see (venv) at the start of the line)
+
+STEP 10 — Install everything in ONE command:
+  pip install fastapi uvicorn[standard] python-multipart pydantic tensorflow numpy opencv-python Pillow matplotlib scikit-learn seaborn python-dotenv
+
+  This installs:
+  ✓ fastapi          — web framework
+  ✓ uvicorn          — server
+  ✓ python-multipart — file uploads
+  ✓ pydantic         — data validation
+  ✓ tensorflow       — AI model (this is large, ~500MB, takes 5-10 min)
+  ✓ numpy            — number arrays
+  ✓ opencv-python    — cv2 (fixes the "No module named cv2" error)
+  ✓ Pillow           — image processing (PIL)
+  ✓ matplotlib       — training plots
+  ✓ scikit-learn     — evaluation metrics
+  ✓ seaborn          — confusion matrix plot
+  ✓ python-dotenv    — .env file support
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — RUN THE PROJECT (EVERY TIME ON DEMO DAY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open TWO PowerShell windows.
+
+━━ LEFT TERMINAL (Backend) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  cd C:\Users\Asus\Desktop\SOIL_CHAIN
+  venv\Scripts\activate
+  uvicorn app.main:app --reload
+
+  Wait for this message:
+  ✓ INFO: Uvicorn running on http://127.0.0.1:8000
+  ✓ INFO: Application startup complete.
+
+  DO NOT CLOSE THIS WINDOW.
+
+━━ RIGHT TERMINAL (Smart Contracts) ━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  cd C:\Users\Asus\Desktop\SOIL_CHAIN\smart-contracts
+  npx hardhat test
+
+  Wait for:
+  ✓ 14 passing (Xs)
+
+  KEEP THIS RESULT ON SCREEN for judges.
+
+━━ CHROME BROWSER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Open these two tabs:
+  Tab 1: http://127.0.0.1:8000/app     ← main demo
+  Tab 2: http://127.0.0.1:8000/docs    ← API docs
+
+━━ WARM UP (do this before judges arrive) ━━━━━━━━━━━━━━━━━━━
+
+  Go to Tab 1 → Soil Scan → Enter these values → Click Analyse:
+  pH: 6.5  |  Nitrogen: 320  |  Phosphorus: 38
+  Potassium: 185  |  Moisture: 48
+
+  Expected result: Score 100, Grade A ✅
+  This loads the AI model into memory so it's fast for judges.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — IF SOMETHING BREAKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Problem: ModuleNotFoundError: No module named 'cv2'
+Fix:     pip install opencv-python
+
+Problem: ModuleNotFoundError: No module named 'app'
+Fix:     Make sure you are in SOIL_CHAIN folder (not inside app\)
+         cd C:\Users\Asus\Desktop\SOIL_CHAIN
+         then run uvicorn again
+
+Problem: Fatal error in launcher / OneDrive path error
+Fix:     rmdir /s /q venv
+         python -m venv venv
+         venv\Scripts\activate
+         pip install fastapi uvicorn[standard] python-multipart pydantic tensorflow numpy opencv-python Pillow matplotlib scikit-learn seaborn
+
+Problem: Backend starts but model not loading
+Fix:     Check that models\ folder has best_model_phase2.h5
+         dir models\
+         If missing: copy best_model_phase2.h5 models\
+
+Problem: Page not loading in Chrome
+Fix:     Press Ctrl+Shift+R (hard refresh)
+
+Problem: Backend crashed during demo
+Fix:     Press Ctrl+C in left terminal
+         uvicorn app.main:app --reload
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEMO DAY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ Left terminal  — uvicorn running, no red errors
+□ Right terminal — 14 passing shown on screen
+□ Chrome Tab 1   — http://127.0.0.1:8000/app loaded
+□ Chrome Tab 2   — http://127.0.0.1:8000/docs loaded
+□ Warm-up scan   — done, score 100/100 visible
+□ Phone hotspot  — ON (don't rely on venue WiFi)
+□ Laptop         — plugged in and charging
+□ VS Code        — soil_analysis.py open and visible
+□ models\ folder — best_model_phase2.h5 confirmed present
