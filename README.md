@@ -20,6 +20,8 @@ SoilChain has been upgraded to a **Digital MRV (Measurement, Reporting, and Veri
 - **Satellite NDVI Integration**: Real-world vegetation tracking using Sentinel Hub API with a robust proxy fallback.
 - **Blockchain Trust Layers**: Support for both real Polygon Amoy minting and simulated demonstration modes.
 - **ICES Score**: Irrigation Carbon Efficiency Score to track water-based carbon capture regulation.
+- **Emission-to-Carbon Credit Bridge**: Connects real-world emissions (War, Industry, Cities) to farmer-generated credits.
+- **Emission Offset Simulator**: Interactive tool to calculate the fulfillment ratio of emissions using SoilChain's aggregated supply.
 
 ## Project Structure
 

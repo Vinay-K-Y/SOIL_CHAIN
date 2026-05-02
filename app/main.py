@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.routers import soil, tokens, marketplace, air_carbon, water_carbon, integration
+from app.routers import soil, tokens, marketplace, air_carbon, water_carbon, integration, emissions
 
 app = FastAPI(
     title="SoilChain API",
@@ -35,6 +35,7 @@ app.include_router(marketplace.router, prefix="/api/marketplace", tags=["Marketp
 app.include_router(air_carbon.router, prefix="/api/air-carbon",  tags=["Air Carbon"])
 app.include_router(water_carbon.router, prefix="/api/water-carbon", tags=["Water Carbon"])
 app.include_router(integration.router, prefix="/api/integration",  tags=["Integration"])
+app.include_router(emissions.router, prefix="/api/emissions",    tags=["Emissions"])
 
 # Serve the frontend HTML app at /app
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -63,6 +64,7 @@ def root():
             "air_carbon":  "POST /api/air-carbon/estimate",
             "water_carbon": "POST /api/water-carbon/estimate",
             "total_carbon": "POST /api/integration/total-carbon",
+            "emissions_offset": "POST /api/emissions/estimate",
         }
     }
 

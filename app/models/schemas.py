@@ -152,3 +152,16 @@ class UnifiedMintResponse(BaseModel):
     # Transparency Fields
     verification_status: str = "PARTIAL"
     blockchain_status: str = "SIMULATED"
+
+class EmissionEstimateRequest(BaseModel):
+    event_name: str
+    co2_emissions: float
+
+class EmissionEstimateResponse(BaseModel):
+    event: str
+    co2_emissions: float
+    credits_required: float
+    available_credits: float
+    fulfillment_ratio: float
+    status: str
+    source: str = "SoilChain Aggregated (Soil + Air + Water)"

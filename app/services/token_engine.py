@@ -22,3 +22,12 @@ def calculate_total_tokens(soil_tokens: float, air_tokens: float, water_tokens: 
         "water_tokens": round(water_tokens, 2),
         "total_tokens": round(total, 2)
     }
+
+def get_total_available_tokens() -> float:
+    """
+    Simulates fetching the total aggregated tokens available in the ecosystem.
+    In a real system, this would query a database or blockchain indexer.
+    """
+    # For demo purposes, we return a realistic aggregated value
+    # based on the sum of current minted credits in the marketplace.
+    return 85000.0
