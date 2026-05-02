@@ -13,8 +13,15 @@ import json
 import numpy as np
 from datetime import datetime
 
-import tensorflow as tf
-import cv2
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 from app.models.schemas import SoilHealthScore, SoilScanResponse, SoilScanRequest
 
@@ -27,14 +34,17 @@ _CLASS_IDX   = os.path.join(_BASE, 'models', 'class_indices.json')
 
 # Load best available model: final > phase2 > None
 _model = None
-if os.path.exists(_MODEL_PATH):
-    _model = tf.keras.models.load_model(_MODEL_PATH)
-    print("✅ CNN model loaded: soil_classifier.h5")
-elif os.path.exists(_PHASE2_PATH):
-    _model = tf.keras.models.load_model(_PHASE2_PATH)
-    print("✅ CNN model loaded: best_model_phase2.h5 (fine-tuned)")
+if tf is not None:
+    if os.path.exists(_MODEL_PATH):
+        _model = tf.keras.models.load_model(_MODEL_PATH)
+        print("[INFO] CNN model loaded: soil_classifier.h5")
+    elif os.path.exists(_PHASE2_PATH):
+        _model = tf.keras.models.load_model(_PHASE2_PATH)
+        print("[INFO] CNN model loaded: best_model_phase2.h5 (fine-tuned)")
+    else:
+        print("[WARN] No trained model found - using sensor-only scoring.")
 else:
-    print("⚠️  No trained model found — using sensor-only scoring.")
+    print("[WARN] TensorFlow not installed - using sensor-only scoring.")
 
 # Load class index mapping from JSON, invert to {index: class_name}
 _class_map = {0: 'degraded', 1: 'healthy', 2: 'moderate'}  # safe fallback
@@ -49,6 +59,8 @@ IMG_SIZE = (224, 224)
 
 def _preprocess_image_bytes(image_bytes: bytes) -> np.ndarray:
     """Decode raw bytes → normalised (1, 224, 224, 3) float32 array."""
+    if cv2 is None:
+        raise ImportError("OpenCV (cv2) is required for image processing.")
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
@@ -154,6 +166,9 @@ def calculate_soil_score(ph, nitrogen, phosphorus, potassium, moisture) -> dict:
         "microbiome_diversity":      round(score / 100 * 8.5, 2),
         "carbon_sequestration_tons": round((score / 100) * 4.0, 3),
         "recommendations":           recommendations,
+        "data_source":               "sensor_fusion",
+        "confidence_score":          0.8,
+        "verification_status":       "PARTIAL"
     }
 
 

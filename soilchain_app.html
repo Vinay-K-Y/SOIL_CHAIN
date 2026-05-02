@@ -67,6 +67,20 @@
   .how-num{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;color:var(--sprout);margin-bottom:6px}
   .how-desc{font-size:12px;color:var(--clay);line-height:1.65}
 
+  /* AIR & WATER */
+  .air-water-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .module-card{display:flex;flex-direction:column;gap:18px}
+  .result-box{background:var(--mist);border-radius:12px;padding:20px;margin-top:10px;display:none;animation:fadeUp .3s ease both}
+  .result-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+  .result-label{color:var(--earth);font-weight:600}
+  .result-value{font-family:'DM Mono',monospace;font-weight:700;color:var(--moss)}
+  .total-dashboard{background:var(--dark);color:white;border-radius:20px;padding:32px;margin-top:32px;text-align:center}
+  .total-tokens-big{font-family:'Syne',sans-serif;font-weight:800;font-size:56px;color:var(--token);margin:16px 0}
+  .total-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+  .total-item{background:rgba(255,255,255,0.05);padding:16px;border-radius:12px}
+  .total-val{font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:var(--sprout)}
+  .total-lbl{font-size:11px;color:var(--clay);text-transform:uppercase;margin-top:4px}
+
   /* SCAN */
   .scan-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
   .form-group{margin-bottom:14px}
@@ -237,6 +251,7 @@
     <button class="nav-tab" onclick="showPage('scan')">Soil Scan</button>
     <button class="nav-tab" onclick="showPage('marketplace')">Marketplace</button>
     <button class="nav-tab" onclick="showPage('credits')">Carbon Credits</button>
+    <button class="nav-tab" onclick="showPage('air-water')">Air & Water</button>
     <button class="nav-tab" onclick="showPage('dashboard')">My Farm</button>
   </div>
   <div class="nav-right">
@@ -429,6 +444,95 @@
         </div>
         <div id="resultContent" style="display:none;flex-direction:column;gap:14px"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- AIR & WATER -->
+<div class="page" id="page-air-water">
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Air & Water Carbon</div><div class="section-sub">Vegetation growth (NDVI) and Irrigation efficiency (ICES)</div></div>
+      <button class="btn btn-dark" onclick="calculateTotalCarbon()">📊 Total Dashboard</button>
+    </div>
+    
+    <div class="air-water-grid">
+      <!-- Air Carbon Module -->
+      <div class="card module-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:24px">🌬️</span>
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700">Air Carbon Estimation</h3>
+        </div>
+        <div class="form-group"><label class="form-label">NDVI Start</label><input class="form-input" id="air_ndvi_start" value="0.3" type="number" step="0.01"></div>
+        <div class="form-group"><label class="form-label">NDVI End</label><input class="form-input" id="air_ndvi_end" value="0.7" type="number" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Area (Hectares)</label><input class="form-input" id="air_area" value="5" type="number"></div>
+        <div class="form-group"><label class="form-label">Crop Type</label>
+          <select class="form-input" id="air_crop_type">
+            <option value="wheat">Wheat</option>
+            <option value="rice">Rice</option>
+            <option value="maize">Maize</option>
+            <option value="trees">Trees</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="estimateAirCarbon()">Calculate Air Carbon</button>
+        
+        <div id="airResult" class="result-box">
+          <div class="result-row"><span class="result-label">Biomass Growth:</span><span class="result-value" id="res_biomass">0</span></div>
+          <div class="result-row"><span class="result-label">Carbon Captured:</span><span class="result-value" id="res_air_carbon">0 t</span></div>
+          <div class="result-row"><span class="result-label">Air Tokens:</span><span class="result-value" id="res_air_tokens" style="color:var(--token)">0 SOIL</span></div>
+        </div>
+      </div>
+
+      <!-- Water Carbon Module -->
+      <div class="card module-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:24px">💧</span>
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700">Water Efficiency (ICES)</h3>
+        </div>
+        <div class="form-group"><label class="form-label">Water Used (Liters)</label><input class="form-input" id="water_liters" value="5000" type="number"></div>
+        <div class="form-group"><label class="form-label">Soil Moisture</label><input class="form-input" id="water_moisture" value="0.5" type="number" step="0.01"></div>
+        <div class="form-group"><label class="form-label">NDVI Value</label><input class="form-input" id="water_ndvi" value="0.7" type="number" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Crop Type</label>
+          <select class="form-input" id="water_crop_type">
+            <option value="wheat">Wheat</option>
+            <option value="rice">Rice</option>
+            <option value="maize">Maize</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="estimateWaterEfficiency()">Calculate Water Efficiency</button>
+        
+        <div id="waterResult" class="result-box">
+          <div class="result-row"><span class="result-label">Efficiency:</span><span class="result-value" id="res_efficiency">0</span></div>
+          <div class="result-row"><span class="result-label">Moisture Score:</span><span class="result-value" id="res_moisture_score">0</span></div>
+          <div class="result-row"><span class="result-label">ICES Score:</span><span class="result-value" id="res_ices">0</span></div>
+          <div class="result-row"><span class="result-label">Water Tokens:</span><span class="result-value" id="res_water_tokens" style="color:var(--token)">0 SOIL</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="total-dashboard" id="totalDashboard" style="display:none">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--sprout);text-transform:uppercase;letter-spacing:.1em">Total Carbon Dashboard</div>
+      <div class="total-tokens-big" id="grand_total_tokens">0.0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:14px;color:var(--clay)">TOTAL WEIGHTED SOIL TOKENS</div>
+      
+      <div class="total-grid">
+        <div class="total-item">
+          <div class="total-val" id="total_soil_val">0.0</div>
+          <div class="total-lbl">Soil (1.0x)</div>
+        </div>
+        <div class="total-item">
+          <div class="total-val" id="total_air_val">0.0</div>
+          <div class="total-lbl">Air (0.7x)</div>
+        </div>
+        <div class="total-item">
+          <div class="total-val" id="total_water_val">0.0</div>
+          <div class="total-lbl">Water (0.5x)</div>
+        </div>
+      </div>
+      
+      <button class="btn btn-gold" style="margin-top:24px;width:100%;padding:18px" onclick="mintUnifiedTokensBlockchain()">
+        ⛓️ Mint Unified Carbon Credits
+      </button>
     </div>
   </div>
 </div>
@@ -643,7 +747,8 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  ['home','scan','marketplace','credits','dashboard'].forEach((p,i)=>{
+  const tabs = ['home','scan','marketplace','credits','air-water','dashboard'];
+  tabs.forEach((p,i)=>{
     if(p===name) document.querySelectorAll('.nav-tab')[i].classList.add('active');
   });
   if(name==='marketplace') renderMarketplace();
@@ -900,44 +1005,101 @@ function displayResult(data) {
     <div class="token-reward">
       <div class="token-icon">🪙</div>
       <div class="token-info">
-        <h4>Earn ${data.estimated_token_reward} SOIL Tokens!</h4>
-        <p>Score qualifies — mint on Polygon Amoy &nbsp;
-          <span style="background:${getTierLabel(h.score).color};color:white;padding:2px 8px;border-radius:20px;font-size:11px;font-family:'Syne',sans-serif">
-            ${getTierLabel(h.score).label} · ${getTierLabel(h.score).mult} reward
-          </span>
-        </p>
+        <h4>Soil Score qualifies for tokens!</h4>
+        <p>Go to <b>Air & Water</b> to combine with other modules for final minting.</p>
       </div>
-      <button class="btn btn-gold btn-sm" onclick="mintTokens('${data.scan_id}',${data.estimated_token_reward},'${data.farm_location}',${h.score},${h.carbon_sequestration_tons})">Mint Now</button>
+      <button class="btn btn-green btn-sm" onclick="showPage('air-water')">Next: Air & Water →</button>
     </div>`:`
     <div style="background:#FDF2F8;border:1.5px solid #F1948A;border-radius:10px;padding:13px;font-size:12px;color:#922B21;text-align:center">
       Score needs 80+ for tokens. Current: ${h.score}. Keep improving! 🌱
     </div>`}`;
 }
 
-async function mintTokens(scanId,amount,location,score,co2) {
-  openModal('🪙 Mint SoilTokens',
-    `Mint ${amount} SOIL tokens for scan ${scanId}. Creates a blockchain transaction on Polygon Amoy.`,
-    `<b>Scan ID:</b> ${scanId}<br><b>Tokens:</b> ${amount} SOIL<br><b>CO₂:</b> ${(co2||amount/2).toFixed(1)} tons<br><b>Network:</b> Polygon Amoy<br><b>Farmer:</b> ${FARMERS[currentFarmer].wallet}`,
+async function mintUnifiedTokensBlockchain() {
+  if (!S.lastScanData) {
+    showToast('⚠️ Please run a Soil Scan first!', '');
+    showPage('scan');
+    return;
+  }
+
+  const payload = {
+    farmer_id: currentFarmer + '_farmer',
+    wallet_address: FARMERS[currentFarmer].wallet,
+    soil_input: {
+      farmer_id: S.lastScanData.farmer_id,
+      farm_location: S.lastScanData.farm_location,
+      latitude: parseFloat(document.getElementById('latitude').value),
+      longitude: parseFloat(document.getElementById('longitude').value),
+      ph: parseFloat(document.getElementById('ph').value),
+      nitrogen: parseFloat(document.getElementById('nitrogen').value),
+      phosphorus: parseFloat(document.getElementById('phosphorus').value),
+      potassium: parseFloat(document.getElementById('potassium').value),
+      moisture: parseFloat(document.getElementById('moisture').value)
+    },
+    air_input: {
+      ndvi_start: parseFloat(document.getElementById('air_ndvi_start').value),
+      ndvi_end: parseFloat(document.getElementById('air_ndvi_end').value),
+      area: parseFloat(document.getElementById('air_area').value),
+      crop_type: document.getElementById('air_crop_type').value
+    },
+    water_input: {
+      water_used_liters: parseFloat(document.getElementById('water_liters').value),
+      soil_moisture: parseFloat(document.getElementById('water_moisture').value),
+      ndvi_value: parseFloat(document.getElementById('water_ndvi').value),
+      crop_type: document.getElementById('water_crop_type').value
+    }
+  };
+
+  openModal('⛓️ Unified Token Minting',
+    `Mint combined carbon tokens from Soil, Air, and Water modules. Applies weighted efficiency factors.`,
+    `<b>Farmer:</b> ${currentFarmer}<br><b>Network:</b> Polygon Amoy<br><b>Wallet:</b> ${payload.wallet_address}`,
     async () => {
       closeModal();
-      // Run blockchain animation
-      runChainAnimation(amount, scanId, location, (txHash) => {
-        S.tokenBalance += amount;
-        S.totalCO2 += co2||amount/2;
-        addActivity('🪙',`Minted ${amount} SOIL tokens for scan at ${location}`);
-        updateNavBadge();
-        showToast(`🎉 Minted ${amount} SOIL! Tokens in your wallet.`,'success');
-        const offerId='my_offer_'+Date.now();
-        S.myCreditOfferId=offerId;
-        S.creditOffers.unshift({id:offerId,owner:'me',farm:location,tokens:amount,co2:parseFloat((co2||amount/2).toFixed(1)),pricePerToken:2500,sold:false,txHash});
-        if(score>=80&&!S.myListingId){
-          const listId='my_listing_'+Date.now();
-          S.myListingId=listId;
-          S.listings.unshift({id:listId,owner:'me',farm:location,score,qty:40,maxQty:40,price:4200,desc:`Fresh microbiome from your verified ${location} farm. Blockchain-certified score: ${score}.`});
+      
+      try {
+        const res = await fetch(`${API}/tokens/mint`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          runChainAnimation(data.total_tokens, 'unified_' + Date.now(), S.lastScanData.farm_location, (txHash) => {
+            S.tokenBalance += data.total_tokens;
+            S.totalCO2 += (data.soil_tokens + data.air_tokens); 
+            
+            // Update Blockchain Badge
+            const bcBadge = document.getElementById('bc_badge');
+            bcBadge.textContent = 'BLOCKCHAIN: ' + data.blockchain_status;
+            bcBadge.style.background = data.blockchain_status === 'VERIFIED' ? 'var(--moss)' : 'var(--token)';
+            
+            addActivity('🪙', `Minted ${data.total_tokens.toFixed(1)} Unified SOIL tokens`);
+            updateNavBadge();
+            
+            // Add to marketplace/credits
+            const offerId = 'unified_offer_' + Date.now();
+            S.creditOffers.unshift({
+              id: offerId,
+              owner: 'me',
+              farm: S.lastScanData.farm_location,
+              tokens: data.total_tokens,
+              co2: data.soil_tokens + data.air_tokens,
+              pricePerToken: 2500,
+              sold: false,
+              txHash: txHash
+            });
+            
+            showToast(`🎉 Unified Mint Successful: ${data.total_tokens.toFixed(1)} SOIL!`, 'success');
+            saveState();
+            renderDashboard();
+          });
+        } else {
+          showToast('❌ Minting failed: ' + data.detail, '');
         }
-        saveState();
-      });
-      try { await fetch(`${API}/tokens/mint`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scan_id:scanId,farmer_id:currentFarmer+'_farmer',wallet_address:FARMERS[currentFarmer].wallet,token_amount:amount})}); } catch {}
+      } catch (e) {
+        showToast('⚠️ Connection error', '');
+      }
     }
   );
 }
@@ -993,6 +1155,144 @@ function renderDashboard() {
       <div class="act-text">${a.text}</div>
       <div class="act-time">${a.time}</div>
     </div>`).join('');}
+}
+
+// ══════════════════════════════════════════════════════
+// AIR & WATER CARBON
+// ══════════════════════════════════════════════════════
+let airTokens = 0;
+let waterTokens = 0;
+
+async function estimateAirCarbon() {
+  const payload = {
+    ndvi_start: parseFloat(document.getElementById('air_ndvi_start').value),
+    ndvi_end: parseFloat(document.getElementById('air_ndvi_end').value),
+    area: parseFloat(document.getElementById('air_area').value),
+    crop_type: document.getElementById('air_crop_type').value
+  };
+
+  try {
+    const res = await fetch(`${API}/air-carbon/estimate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('res_biomass').textContent = data.biomass_growth;
+      document.getElementById('res_air_tokens').textContent = data.tokens + ' SOIL';
+      
+      // Transparency Updates
+      document.getElementById('air_source').textContent = data.data_source;
+      document.getElementById('air_conf').textContent = data.confidence_score;
+      const badge = document.getElementById('air_badge');
+      badge.textContent = data.verification_status;
+      badge.style.background = data.verification_status === 'VERIFIED' ? 'var(--moss)' : 
+                               data.verification_status === 'PARTIAL' ? 'var(--sprout)' : 'var(--mist)';
+      badge.style.color = data.verification_status === 'UNVERIFIED' ? 'var(--clay)' : 'white';
+      
+      document.getElementById('airResult').style.display = 'block';
+      airTokens = data.tokens;
+      showToast('🌬️ Air carbon estimated!', 'success');
+    }
+  } catch (e) {
+    showToast('⚠️ Backend error', '');
+  }
+}
+
+async function estimateWaterEfficiency() {
+  const payload = {
+    water_used_liters: parseFloat(document.getElementById('water_liters').value),
+    soil_moisture: parseFloat(document.getElementById('water_moisture').value),
+    ndvi_value: parseFloat(document.getElementById('water_ndvi').value),
+    crop_type: document.getElementById('water_crop_type').value
+  };
+
+  try {
+    const res = await fetch(`${API}/water-carbon/estimate`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('res_ices').textContent = data.ices_score;
+      document.getElementById('res_water_tokens').textContent = data.tokens + ' SOIL';
+      
+      // Transparency Updates
+      document.getElementById('water_source').textContent = data.data_source;
+      document.getElementById('water_conf').textContent = data.confidence_score;
+      const badge = document.getElementById('water_badge');
+      badge.textContent = data.verification_status;
+      badge.style.background = data.verification_status === 'VERIFIED' ? 'var(--moss)' : 'var(--mist)';
+      badge.style.color = data.verification_status === 'UNVERIFIED' ? 'var(--clay)' : 'white';
+      
+      document.getElementById('waterResult').style.display = 'block';
+      waterTokens = data.tokens;
+      showToast('💧 Water efficiency calculated!', 'success');
+    }
+  } catch (e) {
+    showToast('⚠️ Backend error', '');
+  }
+}
+
+async function calculateTotalCarbon() {
+  const payload = {
+    farmer_id: currentFarmer + '_farmer',
+    soil_scan: S.lastScanData ? {
+      farmer_id: S.lastScanData.farmer_id,
+      farm_location: S.lastScanData.farm_location,
+      latitude: parseFloat(document.getElementById('latitude').value),
+      longitude: parseFloat(document.getElementById('longitude').value),
+      ph: parseFloat(document.getElementById('ph').value),
+      nitrogen: parseFloat(document.getElementById('nitrogen').value),
+      phosphorus: parseFloat(document.getElementById('phosphorus').value),
+      potassium: parseFloat(document.getElementById('potassium').value),
+      moisture: parseFloat(document.getElementById('moisture').value)
+    } : {
+      farmer_id: currentFarmer + '_farmer',
+      farm_location: FARMERS[currentFarmer].location,
+      latitude: FARMERS[currentFarmer].lat,
+      longitude: FARMERS[currentFarmer].lng,
+      ph: 6.5, nitrogen: 320, phosphorus: 38, potassium: 185, moisture: 48
+    },
+    air_carbon: {
+      ndvi_start: parseFloat(document.getElementById('air_ndvi_start').value),
+      ndvi_end: parseFloat(document.getElementById('air_ndvi_end').value),
+      area: parseFloat(document.getElementById('air_area').value),
+      crop_type: document.getElementById('air_crop_type').value
+    },
+    water_carbon: {
+      water_used_liters: parseFloat(document.getElementById('water_liters').value),
+      soil_moisture: parseFloat(document.getElementById('water_moisture').value),
+      ndvi_value: parseFloat(document.getElementById('water_ndvi').value),
+      crop_type: document.getElementById('water_crop_type').value
+    }
+  };
+
+  try {
+    const res = await fetch(`${API}/integration/total-carbon`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('grand_total_tokens').textContent = data.total_tokens.toFixed(1);
+      document.getElementById('total_soil_val').textContent = (data.soil_carbon.estimated_token_reward * 1.0).toFixed(1);
+      document.getElementById('total_air_val').textContent = (data.air_carbon.tokens * 0.7).toFixed(1);
+      document.getElementById('total_water_val').textContent = (data.water_carbon.tokens * 0.5).toFixed(1);
+      
+      // Update Transparency Badges
+      const vBadge = document.getElementById('verif_badge');
+      vBadge.textContent = 'VERIFICATION: ' + data.soil_carbon.verification_status;
+      
+      document.getElementById('totalDashboard').style.display = 'block';
+      showToast('📊 Total carbon dashboard updated!', 'success');
+    }
+  } catch (e) {
+    showToast('⚠️ Backend error', '');
+  }
 }
 
 // ══════════════════════════════════════════════════════

@@ -9,6 +9,18 @@ uvicorn app.main:app --reload
 
 Then open: http://localhost:8000/docs (Swagger UI — all endpoints interactive)
 
+## Verifiable Carbon System (MRV Upgrade)
+
+SoilChain has been upgraded to a **Digital MRV (Measurement, Reporting, and Verification)** system, ensuring transparency and trust in carbon credit generation.
+
+### Key Features:
+- **Unified Token Minting**: Integrates Soil, Air, and Water carbon capture into a single weighted token pipeline.
+- **Weighted Formula**: `Total = (Soil * 1.0) + (Air * 0.7) + (Water * 0.5)` to prioritize long-term sequestration.
+- **Transparency Metadata**: Every calculation returns a `data_source`, `confidence_score`, and `verification_status`.
+- **Satellite NDVI Integration**: Real-world vegetation tracking using Sentinel Hub API with a robust proxy fallback.
+- **Blockchain Trust Layers**: Support for both real Polygon Amoy minting and simulated demonstration modes.
+- **ICES Score**: Irrigation Carbon Efficiency Score to track water-based carbon capture regulation.
+
 ## Project Structure
 
 ```
